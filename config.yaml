@@ -1,0 +1,6 @@
+browser: chromium
+headless: false
+timeout: 20000
+retry_captcha: 3
+ignore_https_errors: true
+keep_browser_open: true

@@ -1,0 +1,96 @@
+[
+  {
+    "name": "用户登录失败测试",
+    "steps": [
+      { "action": "goto", "url": "https://192.168.0.116:16333/" },
+      {
+        "action": "input",
+        "selector": { "type": "field", "value": "请输入用户名" },
+        "text": "secadmin"
+      },
+      {
+        "action": "input",
+        "selector": { "type": "field", "value": "请输入密码" },
+        "text": "11"
+      },
+      {
+        "action": "click",
+        "selector": { "type": "button", "value": "登录" }
+      }
+    ]
+  },
+  {
+    "name": "用户登录成功测试",
+    "steps": [
+      {
+        "action": "input",
+        "selector": { "type": "field", "value": "请输入用户名" },
+        "text": "secadmin"
+      },
+      {
+        "action": "input",
+        "selector": { "type": "field", "value": "请输入密码" },
+        "text": "Linsec@2018"
+      },
+      {
+        "action": "click",
+        "selector": { "type": "button", "value": "登录" }
+      }
+    ]
+  },
+  {
+    "name": "策略管理",
+    "steps": [
+      { "action": "menu_click", "menu_path": "策略管控 > 策略管理 > 所有策略" },
+      {
+        "action": "click",
+        "selector": {
+          "type": "button",
+          "value": "新建"
+        }
+      },
+      {
+        "action": "input",
+        "selector": { "type": "field", "value": "策略名称", "scope": "dialog" },
+        "text": "test"
+      },
+      {
+        "action": "click",
+        "selector": { "type": "button", "value": "确定", "scope": "dialog" }
+      }
+    ]
+  },
+  {
+    "name": "全盘扫描并部署白名单测试",
+    "steps": [
+      { "action": "menu_click", "menu_path": "智能扫描" },
+      {
+        "action": "click",
+        "selector": { "type": "button", "value": "全盘扫描"}
+      },
+      {
+        "action": "click",
+        "selector": { "type": "button", "value": "扫描后部署白名单", "scope": "dialog" }
+      }
+    ]
+  },
+  {
+    "name": "指定目录扫描测试",
+    "steps": [
+      { "action": "menu_click", "menu_path": "智能扫描" },
+      {
+        "action": "click",
+        "selector": { "type": "button", "value": "指定目录扫描" }
+      },
+      {
+        "action": "input",
+        "selector": { "type": "field", "value": "目录路径", "scope": "dialog" },
+        "text": "/tmp"
+      },
+      {
+        "action": "click",
+        "selector": { "type": "button", "value": "扫描", "scope": "dialog" }
+      }
+    ]
+  }
+]

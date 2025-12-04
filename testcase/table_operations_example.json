@@ -1,0 +1,175 @@
+[
+  {
+    "name": "表格操作测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/users" },
+      {
+        "action": "table_edit",
+        "table": {
+          "selector": { "type": "css", "value": "#user_table" },
+          "row": { "type": "contains", "value": "张三" }
+        }
+      },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "姓名" },
+        "text": "李四"
+      },
+      {
+        "action": "click",
+        "selector": { "type": "text", "value": "保存" }
+      },
+      {
+        "action": "table_assert",
+        "table": {
+          "selector": { "type": "css", "value": "#user_table" },
+          "row": { "type": "contains", "value": "李四" },
+          "column": { "type": "header", "value": "姓名" },
+          "value": "李四",
+          "mode": "equals"
+        }
+      }
+    ]
+  },
+  {
+    "name": "表格删除测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/users" },
+      {
+        "action": "table_delete",
+        "table": {
+          "selector": { "type": "css", "value": "#user_table" },
+          "row": { "type": "index", "value": "1" }
+        }
+      },
+      {
+        "action": "click",
+        "selector": { "type": "text", "value": "确认" }
+      },
+      {
+        "action": "table_assert",
+        "table": {
+          "selector": { "type": "css", "value": "#user_table" },
+          "row": { "type": "contains", "value": "已删除的用户" },
+          "column": { "type": "header", "value": "状态" },
+          "value": "已删除",
+          "mode": "contains"
+        }
+      }
+    ]
+  },
+  {
+    "name": "表格数据断言测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/users" },
+      {
+        "action": "table_assert",
+        "table": {
+          "selector": { "type": "css", "value": "#user_table" },
+          "row": { "type": "contains", "value": "张三" },
+          "column": { "type": "header", "value": "姓名" },
+          "value": "张三",
+          "mode": "equals"
+        }
+      },
+      {
+        "action": "table_assert",
+        "table": {
+          "selector": { "type": "css", "value": "#user_table" },
+          "row": { "type": "index", "value": "1" },
+          "column": { "type": "index", "value": "2" },
+          "value": "admin",
+          "mode": "contains"
+        }
+      }
+    ]
+  },
+  {
+    "name": "查询功能测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/users" },
+      {
+        "action": "search",
+        "search": {
+          "inputs": [
+            {
+              "selector": { "type": "text", "value": "用户名" },
+              "text": "张三"
+            },
+            {
+              "selector": { "type": "text", "value": "状态" },
+              "text": "启用"
+            }
+          ],
+          "button": { "type": "text", "value": "查询" }
+        }
+      },
+      {
+        "action": "table_assert",
+        "table": {
+          "selector": { "type": "css", "value": "#user_table" },
+          "row": { "type": "contains", "value": "张三" },
+          "column": { "type": "header", "value": "状态" },
+          "value": "启用",
+          "mode": "equals"
+        }
+      }
+    ]
+  },
+  {
+    "name": "综合表格操作测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/products" },
+      {
+        "action": "search",
+        "search": {
+          "inputs": [
+            {
+              "selector": { "type": "text", "value": "产品名称" },
+              "text": "手机"
+            }
+          ],
+          "button": { "type": "text", "value": "搜索" }
+        }
+      },
+      {
+        "action": "table_assert",
+        "table": {
+          "selector": { "type": "css", "value": "#product_table" },
+          "row": { "type": "contains", "value": "手机" },
+          "column": { "type": "header", "value": "产品名称" },
+          "value": "手机",
+          "mode": "contains"
+        }
+      },
+      {
+        "action": "table_edit",
+        "table": {
+          "selector": { "type": "css", "value": "#product_table" },
+          "row": { "type": "contains", "value": "手机" }
+        }
+      },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "价格" },
+        "text": "2999"
+      },
+      {
+        "action": "click",
+        "selector": { "type": "text", "value": "保存" }
+      },
+      {
+        "action": "table_assert",
+        "table": {
+          "selector": { "type": "css", "value": "#product_table" },
+          "row": { "type": "contains", "value": "手机" },
+          "column": { "type": "header", "value": "价格" },
+          "value": "2999",
+          "mode": "equals"
+        }
+      }
+    ]
+  }
+]
+
+

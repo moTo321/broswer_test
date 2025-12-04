@@ -1,0 +1,32 @@
+[
+  {
+    "name": "用户登录",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/login" },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "用户名输入框" },
+        "text": "testuser",
+        "expect": { "type": "text", "value": "用户名输入框", "mode": "value_equals", "text": "testuser" }
+      },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "密码输入框" },
+        "text": "password123",
+        "expect": { "type": "text", "value": "密码输入框", "mode": "value_equals", "text": "password123" }
+      },
+      { "action": "click", "selector": { "type": "text", "value": "登录" } },
+      { "action": "assert", "selector": { "type": "text", "value": "欢迎您，testuser" } }
+    ]
+  },
+  {
+    "name": "产品搜索",
+    "steps": [
+      { "action": "goto", "url": "https://example.com" },
+      { "action": "input", "selector": { "type": "text", "value": "搜索" }, "text": "手机" },
+      { "action": "click", "selector": { "type": "text", "value": "搜索按钮" } },
+      { "action": "assert", "selector": { "type": "xpath", "value": "//h2[contains(text(), '手机')]" } }
+    ]
+  }
+]
+

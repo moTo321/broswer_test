@@ -1,0 +1,88 @@
+[
+  {
+    "name": "多选框选择测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/form" },
+      {
+        "action": "select_options",
+        "selector": { "type": "text", "value": "兴趣爱好" },
+        "options": ["阅读", "运动", "音乐"]
+      },
+      {
+        "action": "assert",
+        "selector": { "type": "text", "value": "已选择3项" }
+      }
+    ]
+  },
+  {
+    "name": "批量复选框操作测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/settings" },
+      {
+        "action": "checkboxes_set",
+        "selectors": [
+          { "type": "text", "value": "接收邮件通知" },
+          { "type": "text", "value": "接收短信通知" },
+          { "type": "text", "value": "接收推送通知" }
+        ],
+        "checked": true
+      },
+      {
+        "action": "checkboxes_set",
+        "selectors": [
+          { "type": "text", "value": "自动保存草稿" }
+        ],
+        "checked": false
+      }
+    ]
+  },
+  {
+    "name": "多个单选按钮选择测试（不同组）",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/form" },
+      {
+        "action": "radios_select",
+        "selectors": [
+          { "type": "text", "value": "男" },
+          { "type": "text", "value": "已婚" },
+          { "type": "text", "value": "本科" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "综合表单多选测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/registration" },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "姓名" },
+        "text": "张三"
+      },
+      {
+        "action": "select_options",
+        "selector": { "type": "css", "value": "select#skills" },
+        "options": ["Java", "Python", "Go"]
+      },
+      {
+        "action": "checkboxes_set",
+        "selectors": [
+          { "type": "text", "value": "同意用户协议" },
+          { "type": "text", "value": "同意隐私政策" }
+        ],
+        "checked": true
+      },
+      {
+        "action": "radios_select",
+        "selectors": [
+          { "type": "text", "value": "3-5年" }
+        ]
+      },
+      {
+        "action": "click",
+        "selector": { "type": "text", "value": "提交" }
+      }
+    ]
+  }
+]
+

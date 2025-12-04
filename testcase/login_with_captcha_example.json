@@ -1,0 +1,73 @@
+[
+  {
+    "name": "用户登录（带验证码）",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/login" },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "用户名输入框" },
+        "text": "testuser"
+      },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "密码输入框" },
+        "text": "password123"
+      },
+      {
+        "action": "captcha_input",
+        "captcha": {
+          "auto": true
+        }
+      },
+      { "action": "click", "selector": { "type": "text", "value": "登录" } },
+      { "action": "assert", "selector": { "type": "text", "value": "欢迎您，testuser" } }
+    ]
+  },
+  {
+    "name": "用户登录（手动指定验证码选择器）",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/login" },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "用户名输入框" },
+        "text": "testuser"
+      },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "密码输入框" },
+        "text": "password123"
+      },
+      {
+        "action": "captcha_input",
+        "captcha": {
+          "auto": false,
+          "image_selector": { "type": "css", "value": "img.captcha-image" },
+          "input_selector": { "type": "text", "value": "验证码" }
+        }
+      },
+      { "action": "click", "selector": { "type": "text", "value": "登录" } },
+      { "action": "assert", "selector": { "type": "text", "value": "欢迎您，testuser" } }
+    ]
+  },
+  {
+    "name": "菜单导航测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com" },
+      { "action": "click", "selector": { "type": "text", "value": "登录" } },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "用户名输入框" },
+        "text": "admin"
+      },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "密码输入框" },
+        "text": "admin123"
+      },
+      { "action": "click", "selector": { "type": "text", "value": "登录" } },
+      { "action": "menu_click", "menu_path": "系统管理 > 用户管理 > 新增用户" },
+      { "action": "assert", "selector": { "type": "text", "value": "新增用户" } }
+    ]
+  }
+]
+

@@ -1,0 +1,81 @@
+[
+  {
+    "name": "表单元素测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/form" },
+      {
+        "action": "input",
+        "selector": { "type": "text", "value": "姓名" },
+        "text": "张三"
+      },
+      {
+        "action": "select_option",
+        "selector": { "type": "text", "value": "城市" },
+        "text": "北京"
+      },
+      {
+        "action": "select_option",
+        "selector": { "type": "css", "value": "select#province" },
+        "text": "广东省"
+      },
+      {
+        "action": "checkbox_set",
+        "selector": { "type": "text", "value": "同意协议" },
+        "checked": true
+      },
+      {
+        "action": "checkbox_toggle",
+        "selector": { "type": "text", "value": "接收邮件通知" }
+      },
+      {
+        "action": "radio_select",
+        "selector": { "type": "text", "value": "男" }
+      },
+      {
+        "action": "click",
+        "selector": { "type": "text", "value": "提交" }
+      },
+      {
+        "action": "assert",
+        "selector": { "type": "text", "value": "提交成功" }
+      }
+    ]
+  },
+  {
+    "name": "下拉框选择测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com" },
+      {
+        "action": "select_option",
+        "selector": { "type": "text", "value": "产品分类" },
+        "text": "电子产品"
+      },
+      {
+        "action": "select_option",
+        "selector": { "type": "xpath", "value": "//select[@name='category']" },
+        "text": "手机"
+      }
+    ]
+  },
+  {
+    "name": "复选框和单选按钮测试",
+    "steps": [
+      { "action": "goto", "url": "https://example.com/settings" },
+      {
+        "action": "checkbox_set",
+        "selector": { "type": "text", "value": "启用通知" },
+        "checked": true
+      },
+      {
+        "action": "checkbox_set",
+        "selector": { "type": "text", "value": "自动保存" },
+        "checked": false
+      },
+      {
+        "action": "radio_select",
+        "selector": { "type": "text", "value": "简体中文" }
+      }
+    ]
+  }
+]
+
