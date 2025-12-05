@@ -1,7 +1,7 @@
-package broswerTemplate
+package browseTemplate
 
 import (
-	"autotest/broswer-template/utils"
+	"autotest/browse-template/utils"
 	"encoding/json"
 	"errors"
 	"fmt"

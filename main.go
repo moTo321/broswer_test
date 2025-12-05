@@ -2,9 +2,8 @@ package main
 
 import (
 	apistemplate "autotest/apis-template"
-	"autotest/config"
-	"autotest/driver"
 	"autotest/runner"
+
 	"bufio"
 	"flag"
 	"fmt"
@@ -16,11 +15,12 @@ import (
 func main() {
 	// 定义命令行参数
 	var (
-		configFile = flag.String("c", "config.yaml", "配置文件路径 (默认: config.yaml)")
-		testFile   = flag.String("f", "testcase/login_example.json", "测试用例文件路径 (默认: testcase/login_example.json)")
+		configFile = flag.String("bc", "beowse-template/browse-config.yaml", "配置playright浏览器文件路径")
+		testFile   = flag.String("bf", "testcase/browse/login_example.json", "浏览器测试用例文件路径")
 		// 新增：API 模板路径参数
-		apiFile = flag.String("a", "apis-template/apis.json", "API 模板文件路径")
-		help    = flag.Bool("h", false, "显示帮助信息")
+		apiFile = flag.String("ac", "apis-template/apis.json", "API 模板文件路径")
+
+		help = flag.Bool("h", false, "显示帮助信息")
 	)
 
 	// 解析命令行参数

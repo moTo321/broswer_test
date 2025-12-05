@@ -1,4 +1,4 @@
-package broswerTemplate
+package browseTemplate
 
 import (
 	"fmt"
