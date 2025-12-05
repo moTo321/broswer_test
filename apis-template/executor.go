@@ -31,7 +31,6 @@ func ExecuteRequest(req APIRequest) (*APIResponse, error) {
 	}
 
 	// 2. 创建 HTTP Request 对象
-	// 注意：Method 需要转为大写 (如 "post" -> "POST")
 	httpReq, err := http.NewRequest(strings.ToUpper(req.Method), req.URL, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %v", err)
@@ -66,7 +65,7 @@ func ExecuteRequest(req APIRequest) (*APIResponse, error) {
 		Body:       make(map[string]interface{}),
 	}
 
-	// 尝试将响应解析为 JSON Map，如果不是 JSON 也不报错，只是 Body 为空
+	// 尝试将响应解析为 JSON Map
 	if len(respBytes) > 0 {
 		_ = json.Unmarshal(respBytes, &result.Body)
 	}

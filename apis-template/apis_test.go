@@ -30,20 +30,13 @@ func TestLoadAPITemplates(t *testing.T) {
 }
 
 // 定义用于解析测试用例 JSON 的辅助结构体
-// 注意：这些结构体只在测试中使用，所以定义在 _test.go 文件里即可
 type TestCaseConfig struct {
 	Template string  `json:"template"`
 	Params   []Param `json:"params"`
 }
 
-type TestCase struct {
-	Name      string         `json:"name"`
-	APIConfig TestCaseConfig `json:"api_config"`
-}
-
 func TestGenerateRequest_ParamReplacement(t *testing.T) {
-	// 1. 准备数据：模拟加载进来的模板 (模拟 apis.json)
-	// 这里我们模拟 "call_login" 模板
+	// 1. 准备数据：模拟加载进来的模板
 	templates := APITemplates{
 		"call_login": APIRequest{
 			URL:    "http://{api_host}:{api_port}/api/login",
@@ -52,8 +45,8 @@ func TestGenerateRequest_ParamReplacement(t *testing.T) {
 				"Content-Type": "application/json",
 			},
 			Data: map[string]interface{}{
-				"username": "{username}", // 待替换
-				"password": "{password}", // 待替换
+				"username": "{username}",
+				"password": "{password}",
 			},
 		},
 	}
@@ -87,29 +80,17 @@ func TestGenerateRequest_ParamReplacement(t *testing.T) {
 	}
 
 	// 5. 执行核心逻辑：生成请求
-	// 注意：你的 JSON 只提供了 {username}，没有提供 {password} 或 {api_host}
-	// 所以预期结果是：username 被替换，其他保持原样
 	gotReq, err := GenerateRequest(tmpl, tc.APIConfig.Params)
 	if err != nil {
 		t.Fatalf("GenerateRequest 执行失败: %v", err)
 	}
 
-	// 6. 验证结果 (断言)
-
-	// 6.1 验证 Data 是否存在
+	// 6. 验证结果
 	if gotReq.Data == nil {
 		t.Fatal("生成的请求 Data 为空")
 	}
 
-	// 6.2 直接使用 gotReq.Data
-	// 因为在结构体定义中，Data 已经是 map[string]interface{} 类型，无需断言
 	dataMap := gotReq.Data
-
-	if dataMap == nil {
-		t.Fatal("生成的请求 Data 为空")
-	}
-
-	// 6.3 核心验证：检查 username 是否变成了 "123"
 	expectedUsername := "123"
 	if dataMap["username"] != expectedUsername {
 		t.Errorf("替换失败: username 期望是 '%s', 实际是 '%v'", expectedUsername, dataMap["username"])
@@ -122,20 +103,19 @@ func TestGenerateRequest_URLReplacement(t *testing.T) {
 	// 1. 准备模板
 	templates := APITemplates{
 		"call_login": APIRequest{
-			// 原始 URL 包含两个占位符
 			URL:    "http://{api_host}:{api_port}/api/login",
 			Method: "post",
 			Headers: map[string]string{
 				"Content-Type": "application/json",
 			},
 			Data: map[string]interface{}{
-				"username": "{username}", // 待替换
-				"password": "{password}", // 待替换
+				"username": "{username}",
+				"password": "{password}",
 			},
 		},
 	}
 
-	// 2. 准备测试数据 (这次我们提供 host 和 port)
+	// 2. 准备测试数据
 	jsonInput := `
 	{
 		"name": "Test URL Replace",
@@ -148,27 +128,160 @@ func TestGenerateRequest_URLReplacement(t *testing.T) {
 		}
 	}`
 
-	// 3. 解析测试配置
 	var tc TestCase
 	if err := json.Unmarshal([]byte(jsonInput), &tc); err != nil {
 		t.Fatalf("JSON解析失败: %v", err)
 	}
 
-	// 4. 获取模板
 	tmpl := templates[tc.APIConfig.Template]
 
-	// 5. 执行生成逻辑
 	gotReq, err := GenerateRequest(tmpl, tc.APIConfig.Params)
 	if err != nil {
 		t.Fatalf("GenerateRequest 出错: %v", err)
 	}
 
-	// 6. 验证 URL 替换结果
 	expectedURL := "http://192.168.1.100:8080/api/login"
 
 	if gotReq.URL != expectedURL {
 		t.Errorf("URL 替换错误.\n期望: %s\n实际: %s", expectedURL, gotReq.URL)
 	} else {
 		t.Logf("URL 替换成功: %s", gotReq.URL)
+	}
+}
+
+// ExpectConfig 定义期望结果
+type ExpectConfig struct {
+	Status int                    `json:"status"`
+	Body   map[string]interface{} `json:"body"`
+}
+
+// TestCase 对应 JSON Array 中的单个对象
+type TestCase struct {
+	Name      string         `json:"name"`
+	APIConfig TestCaseConfig `json:"api_config"`
+	Expect    ExpectConfig   `json:"expect"`
+}
+
+func TestRunTestCases_RealServer(t *testing.T) {
+	// 1. 加载 API 模板 (从 apis.json 文件)
+	// 确保 apis.json 在当前测试目录下，或者使用绝对路径
+	templates, err := LoadAPITemplates("apis.json")
+	if err != nil {
+		t.Fatalf("加载 apis.json 模板失败: %v", err)
+	}
+
+	// 2. 您的测试用例数据 (JSON Array)
+	jsonInput := `
+	[
+		{
+			"name": "Test Login API",
+			"api_config": {
+				"template": "call_login",
+				"params": [
+					{ "key": "{username}", "value": "123" },
+					{ "key": "{password}", "value": "123" },
+					{ "key": "{api_host}", "value": "192.168.0.108" },
+					{ "key": "{api_port}", "value": "8080" }
+				]
+			},
+			"expect": {
+				"status": 200,
+				"body": {
+					"code": 1001,
+					"message": "用户名或密码错误"
+				}
+			}
+		}
+	]`
+
+	// 3. 解析测试用例
+	var testCases []TestCase
+	if err := json.Unmarshal([]byte(jsonInput), &testCases); err != nil {
+		t.Fatalf("JSON 解析失败: %v", err)
+	}
+
+	// 4. 循环执行测试
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			// A. 获取模板
+			tmpl, exists := templates[tc.APIConfig.Template]
+			if !exists {
+				t.Fatalf("模板 '%s' 不存在", tc.APIConfig.Template)
+			}
+
+			// B. 生成请求 (替换 host, port, username 等参数)
+			req, err := GenerateRequest(tmpl, tc.APIConfig.Params)
+			if err != nil {
+				t.Fatalf("请求生成失败: %v", err)
+			}
+
+			// 打印一下最终 URL 方便调试
+			t.Logf("正在请求 URL: %s", req.URL)
+
+			// C. 执行请求 (发送到真实服务器)
+			resp, err := ExecuteRequest(req)
+			if err != nil {
+				t.Fatalf("请求执行失败: %v", err)
+			}
+			t.Logf("收到响应\n Status: %d,\n RawBody: %s,\n Header: %s,\n Body: %v\n", resp.StatusCode, resp.RawBody, resp.Header, resp.Body)
+
+			// ==========================================
+			// D. 验证阶段
+			// ==========================================
+
+			// D-1: 校验 HTTP 状态码 (Status)
+			if resp.StatusCode != tc.Expect.Status {
+				t.Errorf("HTTP状态码错误! 期望: %d, 实际: %d", tc.Expect.Status, resp.StatusCode)
+			}
+
+			// D-2: 校验 Body 内容 (Code, Message 等)
+			for key, expectedVal := range tc.Expect.Body {
+				actualVal, exists := resp.Body[key]
+				if !exists {
+					t.Errorf("响应 Body 缺少字段: %s", key)
+					continue
+				}
+
+				// 使用辅助函数比较 (解决 1001 vs 1001.0 问题)
+				if !compareValues(expectedVal, actualVal) {
+					t.Errorf("字段 '%s' 校验失败.\n期望: %v (类型 %T)\n实际: %v (类型 %T)",
+						key, expectedVal, expectedVal, actualVal, actualVal)
+				}
+			}
+		})
+	}
+}
+
+// ==========================================
+// 辅助函数 (必须添加)
+// ==========================================
+
+// compareValues 处理 JSON 数值类型的比较
+func compareValues(expected, actual interface{}) bool {
+	if expected == actual {
+		return true
+	}
+	// 将所有数字统一转为 float64 进行比较
+	expFloat, ok1 := toFloat64(expected)
+	actFloat, ok2 := toFloat64(actual)
+	if ok1 && ok2 {
+		return expFloat == actFloat
+	}
+	// 如果不是数字，直接对比字符串形式 (兜底方案)
+	return fmt.Sprintf("%v", expected) == fmt.Sprintf("%v", actual)
+}
+
+func toFloat64(v interface{}) (float64, bool) {
+	switch val := v.(type) {
+	case int:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case float64:
+		return val, true
+	case float32:
+		return float64(val), true
+	default:
+		return 0, false
 	}
 }
