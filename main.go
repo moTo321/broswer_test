@@ -2,6 +2,7 @@ package main
 
 import (
 	apistemplate "autotest/apis-template"
+	browseTemplate "autotest/browse-template"
 	"autotest/runner"
 
 	"bufio"
@@ -15,12 +16,10 @@ import (
 func main() {
 	// 定义命令行参数
 	var (
-		configFile = flag.String("bc", "beowse-template/browse-config.yaml", "配置playright浏览器文件路径")
-		testFile   = flag.String("bf", "testcase/browse/login_example.json", "浏览器测试用例文件路径")
-		// 新增：API 模板路径参数
-		apiFile = flag.String("ac", "apis-template/apis.json", "API 模板文件路径")
-
-		help = flag.Bool("h", false, "显示帮助信息")
+		browseConfigFile = flag.String("c", "browse-template/browse-config.yaml", "配置playright浏览器文件路径")
+		apiTemplateFile  = flag.String("a", "apis-template/apis.json", "API模板文件路径")
+		testFile         = flag.String("f", "testcase/apis/api_test.json", "测试用例文件路径")
+		help             = flag.Bool("h", false, "显示帮助信息")
 	)
 
 	// 解析命令行参数
@@ -35,11 +34,11 @@ func main() {
 	fmt.Println("🚀 自动化测试框架启动")
 
 	// 加载配置
-	fmt.Printf("📋 加载配置文件: %s\n", *configFile)
-	cfg, err := config.LoadConfig(*configFile)
+	fmt.Printf("📋 加载配置文件: %s\n", *browseConfigFile)
+	cfg, err := browseTemplate.LoadConfig(*browseConfigFile)
 	if err != nil {
 		fmt.Printf("⚠️  配置加载失败，使用默认配置: %v\n", err)
-		cfg = config.DefaultConfig()
+		cfg = browseTemplate.DefaultConfig()
 	} else {
 		fmt.Printf("   - 浏览器: %s\n", cfg.Browser)
 		fmt.Printf("   - 无头模式: %t\n", cfg.Headless)
@@ -47,8 +46,8 @@ func main() {
 	}
 
 	// 2. 加载 API Templates (新增步骤)
-	fmt.Printf("📋 加载 API 模板: %s\n", *apiFile)
-	apiTemplates, err := apistemplate.LoadAPITemplates(*apiFile)
+	fmt.Printf("📋 加载 API 模板: %s\n", *apiTemplateFile)
+	apiTemplates, err := apistemplate.LoadAPITemplates(*apiTemplateFile)
 	if err != nil {
 		// 这里可以选择报错退出，或者只是打印警告（如果只有 UI 测试）
 		fmt.Printf("⚠️  API 模板加载失败 (如果是纯 UI 测试请忽略): %v\n", err)
@@ -56,21 +55,21 @@ func main() {
 	}
 
 	// 启动 Playwright 浏览器
-	page := driver.StartWithConfig(cfg)
+	page := browseTemplate.StartWithConfig(cfg)
 	// 根据配置决定是否在测试结束后关闭浏览器
 	if !cfg.KeepBrowserOpen {
-		defer driver.Stop()
+		defer browseTemplate.Stop()
 	}
 
 	// 创建测试运行器
-	testRunner := runner.NewRunner(page)
+	testRunner := runner.NewRunner(page, apiTemplates)
 
 	// 执行测试套件
 	fmt.Printf("📂 加载测试文件: %s\n", *testFile)
 	err = testRunner.RunTestSuiteFromFile(*testFile)
 	if err != nil {
 		fmt.Printf("❌ 测试执行失败: %v\n", err)
-		driver.TakeErrorScreenshot(page)
+		browseTemplate.TakeErrorScreenshot(page)
 		if cfg.KeepBrowserOpen {
 			waitForUserInput("浏览器将保持打开状态，请按 Enter 键退出程序")
 		} else {

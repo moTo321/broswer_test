@@ -1,6 +1,8 @@
-package browseTemplate
+package runner
 
 import (
+	apisTemplate "autotest/apis-template"
+	browseTemplate "autotest/browse-template"
 	"autotest/browse-template/utils"
 	"encoding/json"
 	"errors"
@@ -12,78 +14,14 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
-// SelectorConfig 选择器配置（使用 utils 中的定义）
-type SelectorConfig = utils.SelectorConfig
-
-// ExpectConfig 期望验证配置
-type ExpectConfig struct {
-	Type  string `json:"type"`           // "text", "xpath", "css", "id"
-	Value string `json:"value"`          // 选择器的值
-	Mode  string `json:"mode"`           // "value_equals", "text_equals", "text_contains", "visible"
-	Text  string `json:"text,omitempty"` // 期望的文本内容
-}
-
-// TestStep 测试步骤
-type TestStep struct {
-	Action    string           `json:"action"`              // "goto", "input", "click", "assert", "menu_click", "captcha_input", "select_option", "select_options", "checkbox_toggle", "checkbox_set", "checkboxes_set", "radio_select", "radios_select", "table_edit", "table_delete", "table_assert", "search"
-	URL       string           `json:"url,omitempty"`       // goto的URL
-	Selector  *SelectorConfig  `json:"selector,omitempty"`  // 元素选择器（单个）
-	Selectors []SelectorConfig `json:"selectors,omitempty"` // 元素选择器（多个，用于批量操作）
-	Text      string           `json:"text,omitempty"`      // input的文本内容，或select的选项值（单个）
-	Options   []string         `json:"options,omitempty"`   // select的选项值（多个，用于多选）
-	Expect    *ExpectConfig    `json:"expect,omitempty"`    // 期望验证配置
-	MenuPath  string           `json:"menu_path,omitempty"` // 菜单路径，格式: "系统管理 > 用户管理 > 新增用户"
-	Captcha   *CaptchaConfig   `json:"captcha,omitempty"`   // 验证码配置
-	Checked   *bool            `json:"checked,omitempty"`   // checkbox_set时使用，true表示选中，false表示取消选中
-	Table     *TableConfig     `json:"table,omitempty"`     // 表格配置
-	Search    *SearchConfig    `json:"search,omitempty"`    // 查询配置
-}
-
-// TableConfig 表格配置
-type TableConfig struct {
-	Selector SelectorConfig     `json:"selector"`         // 表格选择器
-	Row      *TableRowConfig    `json:"row,omitempty"`    // 行定位配置
-	Column   *TableColumnConfig `json:"column,omitempty"` // 列定位配置
-	Action   string             `json:"action,omitempty"` // 操作类型: "edit", "delete"
-	Value    string             `json:"value,omitempty"`  // 断言期望值
-	Mode     string             `json:"mode,omitempty"`   // 断言模式: "equals", "contains", "not_equals", "not_contains"
-}
-
-// TableRowConfig 表格行配置
-type TableRowConfig struct {
-	Type  string `json:"type"`  // "index"（索引）, "text"（文本匹配）, "contains"（包含文本）
-	Value string `json:"value"` // 行定位值
-}
-
-// TableColumnConfig 表格列配置
-type TableColumnConfig struct {
-	Type  string `json:"type"`  // "index"（索引）, "header"（表头文本）
-	Value string `json:"value"` // 列定位值
-}
-
-// SearchConfig 查询配置
-type SearchConfig struct {
-	Inputs []SearchInput   `json:"inputs,omitempty"` // 查询输入框配置
-	Button *SelectorConfig `json:"button,omitempty"` // 查询按钮选择器
-}
-
-// SearchInput 查询输入配置
-type SearchInput struct {
-	Selector *SelectorConfig `json:"selector"` // 输入框选择器
-	Text     string          `json:"text"`     // 输入文本
-}
-
-// CaptchaConfig 验证码配置
-type CaptchaConfig struct {
-	ImageSelector *SelectorConfig `json:"image_selector,omitempty"` // 验证码图片选择器
-	InputSelector *SelectorConfig `json:"input_selector,omitempty"` // 验证码输入框选择器
-	Auto          bool            `json:"auto,omitempty"`           // 是否自动识别（自动查找验证码图片和输入框）
-}
-
-// TestCase 测试用例
+// TestCase 测试用例结构
 type TestCase struct {
-	Name  string     `json:"name"`
-	Steps []TestStep `json:"steps"`
+	Name string `json:"name"`
+	// UI 测试字段
+	Steps []browseTemplate.TestStep `json:"steps,omitempty"`
+	// APi 测试字段（可选，留空表示纯 UI 测试）
+	APIConfig *apisTemplate.TestCaseConfig `json:"api_config,omitempty"`
+	APIExpect *apisTemplate.ExpectConfig   `json:"expect,omitempty"`
 }
 
 // TestSuite 测试套件（支持多个用例）
@@ -91,20 +29,40 @@ type TestSuite []TestCase
 
 // Runner 测试运行器
 type Runner struct {
-	page playwright.Page
+	page         playwright.Page
+	apiTemplates apisTemplate.APITemplates
 }
 
 // NewRunner 创建新的测试运行器
-func NewRunner(page playwright.Page) *Runner {
-	return &Runner{page: page}
+func NewRunner(page playwright.Page, apiTemplates apisTemplate.APITemplates) *Runner {
+	return &Runner{
+		page:         page,
+		apiTemplates: apiTemplates,
+	}
 }
 
 // RunTestCase 执行单个测试用例
 func (r *Runner) RunTestCase(testCase TestCase) error {
 	fmt.Printf("📋 开始执行用例: %s\n", testCase.Name)
 
+	// 分支 1: 如果有 Steps，执行 UI 测试
+	if len(testCase.Steps) > 0 {
+		return r.runUISteps(testCase)
+	}
+
+	// 分支 2: 如果有 APIConfig，执行 API 测试
+	if testCase.APIConfig != nil {
+		return r.runAPITest(testCase)
+	}
+
+	// TODO: 分支 3: System Tool 测试
+
+	return fmt.Errorf("无效的测试用例: 没有 steps 或 api_config")
+}
+
+func (r *Runner) runUISteps(testCase TestCase) error {
 	allStepsCount := len(testCase.Steps)
-	for i := 0; i < allStepsCount; i++ {
+	for i := range allStepsCount {
 		step := testCase.Steps[i]
 		fmt.Printf("  [%d/%d] 执行步骤: %s\n", i+1, allStepsCount, step.Action)
 
@@ -150,7 +108,7 @@ func (r *Runner) RunTestCase(testCase TestCase) error {
 
 		if err != nil {
 			// 错误截图
-			TakeErrorScreenshot(r.page)
+			browseTemplate.TakeErrorScreenshot(r.page)
 			return fmt.Errorf("步骤 [%d] %s 执行失败: %v", i+1, step.Action, err)
 		}
 
@@ -158,7 +116,45 @@ func (r *Runner) RunTestCase(testCase TestCase) error {
 		time.Sleep(300 * time.Millisecond)
 	}
 
-	fmt.Printf("✅ 用例执行完成: %s\n", testCase.Name)
+	fmt.Printf("✅ UI 用例执行完成: %s\n", testCase.Name)
+	return nil
+}
+
+// runAPITest 新增：API 测试执行逻辑
+func (r *Runner) runAPITest(testCase TestCase) error {
+	fmt.Println("  [API] 正在准备请求...")
+
+	// 1. 获取模板
+	if r.apiTemplates == nil {
+		return fmt.Errorf("API 模板未加载")
+	}
+	tmpl, exists := r.apiTemplates[testCase.APIConfig.Template]
+	if !exists {
+		return fmt.Errorf("找不到 API 模板: %s", testCase.APIConfig.Template)
+	}
+
+	// 2. 生成请求
+	req, err := apisTemplate.GenerateRequest(tmpl, testCase.APIConfig.Params)
+	if err != nil {
+		return fmt.Errorf("生成请求失败: %v", err)
+	}
+
+	fmt.Printf("  [API] 发送 %s 请求到: %s\n", req.Method, req.URL)
+
+	// 3. 执行请求
+	resp, err := apisTemplate.ExecuteRequest(req)
+	if err != nil {
+		return fmt.Errorf("请求执行失败: %v", err)
+	}
+
+	// 4. 验证结果
+	if testCase.APIExpect != nil {
+		if err := apisTemplate.ValidateResponse(resp, *testCase.APIExpect); err != nil {
+			return fmt.Errorf("验证失败: %v", err)
+		}
+	}
+
+	fmt.Printf("✅ API 用例执行通过: Status %d\n", resp.StatusCode)
 	return nil
 }
 
@@ -189,7 +185,7 @@ func (r *Runner) RunTestSuiteFromFile(filePath string) error {
 }
 
 // handleGoto 处理页面跳转
-func (r *Runner) handleGoto(step TestStep) error {
+func (r *Runner) handleGoto(step browseTemplate.TestStep) error {
 	if step.URL == "" {
 		return errors.New("goto action 需要提供 url")
 	}
@@ -200,7 +196,7 @@ func (r *Runner) handleGoto(step TestStep) error {
 }
 
 // handleInput 处理输入操作
-func (r *Runner) handleInput(step TestStep) error {
+func (r *Runner) handleInput(step browseTemplate.TestStep) error {
 	if step.Selector == nil {
 		return errors.New("input action 需要提供 selector")
 	}
@@ -209,7 +205,7 @@ func (r *Runner) handleInput(step TestStep) error {
 	}
 
 	// 定位元素
-	selector := SelectorConfig{
+	selector := utils.SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -234,13 +230,13 @@ func (r *Runner) handleInput(step TestStep) error {
 }
 
 // handleClick 处理点击操作
-func (r *Runner) handleClick(step TestStep) error {
+func (r *Runner) handleClick(step browseTemplate.TestStep) error {
 	if step.Selector == nil {
 		return errors.New("click action 需要提供 selector")
 	}
 
 	// 定位元素
-	selector := SelectorConfig{
+	selector := utils.SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -268,13 +264,13 @@ func (r *Runner) handleClick(step TestStep) error {
 }
 
 // handleAssert 处理断言操作
-func (r *Runner) handleAssert(step TestStep) error {
+func (r *Runner) handleAssert(step browseTemplate.TestStep) error {
 	if step.Selector == nil {
 		return errors.New("assert action 需要提供 selector")
 	}
 
 	// 定位元素
-	selector := SelectorConfig{
+	selector := utils.SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -302,9 +298,9 @@ func (r *Runner) handleAssert(step TestStep) error {
 }
 
 // verifyExpect 验证期望结果
-func (r *Runner) verifyExpect(expect *ExpectConfig, inputText string) error {
+func (r *Runner) verifyExpect(expect *browseTemplate.ExpectConfig, inputText string) error {
 	// 定位期望验证的元素
-	element, err := utils.LocateElement(r.page, SelectorConfig{
+	element, err := utils.LocateElement(r.page, utils.SelectorConfig{
 		Type:  expect.Type,
 		Value: expect.Value,
 	})
@@ -362,7 +358,7 @@ func (r *Runner) verifyExpect(expect *ExpectConfig, inputText string) error {
 }
 
 // handleMenuClick 处理菜单点击操作
-func (r *Runner) handleMenuClick(step TestStep) error {
+func (r *Runner) handleMenuClick(step browseTemplate.TestStep) error {
 	if step.MenuPath == "" {
 		return errors.New("menu_click action 需要提供 menu_path")
 	}
@@ -371,7 +367,7 @@ func (r *Runner) handleMenuClick(step TestStep) error {
 }
 
 // handleCaptchaInput 处理验证码识别和输入操作
-func (r *Runner) handleCaptchaInput(step TestStep) error {
+func (r *Runner) handleCaptchaInput(step browseTemplate.TestStep) error {
 	if step.Captcha == nil {
 		return errors.New("captcha_input action 需要提供 captcha 配置")
 	}
@@ -388,12 +384,12 @@ func (r *Runner) handleCaptchaInput(step TestStep) error {
 	}
 
 	// 转换选择器类型
-	imageSelector := SelectorConfig{
+	imageSelector := utils.SelectorConfig{
 		Type:  step.Captcha.ImageSelector.Type,
 		Value: step.Captcha.ImageSelector.Value,
 		Scope: step.Captcha.ImageSelector.Scope,
 	}
-	inputSelector := SelectorConfig{
+	inputSelector := utils.SelectorConfig{
 		Type:  step.Captcha.InputSelector.Type,
 		Value: step.Captcha.InputSelector.Value,
 		Scope: step.Captcha.InputSelector.Scope,
@@ -404,7 +400,7 @@ func (r *Runner) handleCaptchaInput(step TestStep) error {
 }
 
 // handleSelectOption 处理下拉框选择操作
-func (r *Runner) handleSelectOption(step TestStep) error {
+func (r *Runner) handleSelectOption(step browseTemplate.TestStep) error {
 	if step.Selector == nil {
 		return errors.New("select_option action 需要提供 selector")
 	}
@@ -412,7 +408,7 @@ func (r *Runner) handleSelectOption(step TestStep) error {
 		return errors.New("select_option action 需要提供 text（选项文本或值）")
 	}
 
-	selector := SelectorConfig{
+	selector := utils.SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -422,12 +418,12 @@ func (r *Runner) handleSelectOption(step TestStep) error {
 }
 
 // handleCheckboxToggle 处理复选框切换操作
-func (r *Runner) handleCheckboxToggle(step TestStep) error {
+func (r *Runner) handleCheckboxToggle(step browseTemplate.TestStep) error {
 	if step.Selector == nil {
 		return errors.New("checkbox_toggle action 需要提供 selector")
 	}
 
-	selector := SelectorConfig{
+	selector := utils.SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -437,7 +433,7 @@ func (r *Runner) handleCheckboxToggle(step TestStep) error {
 }
 
 // handleCheckboxSet 处理复选框设置操作
-func (r *Runner) handleCheckboxSet(step TestStep) error {
+func (r *Runner) handleCheckboxSet(step browseTemplate.TestStep) error {
 	if step.Selector == nil {
 		return errors.New("checkbox_set action 需要提供 selector")
 	}
@@ -445,7 +441,7 @@ func (r *Runner) handleCheckboxSet(step TestStep) error {
 		return errors.New("checkbox_set action 需要提供 checked 字段（true/false）")
 	}
 
-	selector := SelectorConfig{
+	selector := utils.SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -455,12 +451,12 @@ func (r *Runner) handleCheckboxSet(step TestStep) error {
 }
 
 // handleRadioSelect 处理单选按钮选择操作
-func (r *Runner) handleRadioSelect(step TestStep) error {
+func (r *Runner) handleRadioSelect(step browseTemplate.TestStep) error {
 	if step.Selector == nil {
 		return errors.New("radio_select action 需要提供 selector")
 	}
 
-	selector := SelectorConfig{
+	selector := utils.SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -470,7 +466,7 @@ func (r *Runner) handleRadioSelect(step TestStep) error {
 }
 
 // handleSelectOptions 处理下拉框多选操作
-func (r *Runner) handleSelectOptions(step TestStep) error {
+func (r *Runner) handleSelectOptions(step browseTemplate.TestStep) error {
 	if step.Selector == nil {
 		return errors.New("select_options action 需要提供 selector")
 	}
@@ -478,7 +474,7 @@ func (r *Runner) handleSelectOptions(step TestStep) error {
 		return errors.New("select_options action 需要提供 options（选项数组）")
 	}
 
-	selector := SelectorConfig{
+	selector := utils.SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -488,7 +484,7 @@ func (r *Runner) handleSelectOptions(step TestStep) error {
 }
 
 // handleCheckboxesSet 处理批量复选框设置操作
-func (r *Runner) handleCheckboxesSet(step TestStep) error {
+func (r *Runner) handleCheckboxesSet(step browseTemplate.TestStep) error {
 	if len(step.Selectors) == 0 {
 		return errors.New("checkboxes_set action 需要提供 selectors（选择器数组）")
 	}
@@ -496,9 +492,9 @@ func (r *Runner) handleCheckboxesSet(step TestStep) error {
 		return errors.New("checkboxes_set action 需要提供 checked 字段（true/false）")
 	}
 
-	selectors := make([]SelectorConfig, len(step.Selectors))
+	selectors := make([]utils.SelectorConfig, len(step.Selectors))
 	for i, sel := range step.Selectors {
-		selectors[i] = SelectorConfig{
+		selectors[i] = utils.SelectorConfig{
 			Type:  sel.Type,
 			Value: sel.Value,
 			Scope: sel.Scope,
@@ -509,14 +505,14 @@ func (r *Runner) handleCheckboxesSet(step TestStep) error {
 }
 
 // handleRadiosSelect 处理多个单选按钮选择操作
-func (r *Runner) handleRadiosSelect(step TestStep) error {
+func (r *Runner) handleRadiosSelect(step browseTemplate.TestStep) error {
 	if len(step.Selectors) == 0 {
 		return errors.New("radios_select action 需要提供 selectors（选择器数组）")
 	}
 
-	selectors := make([]SelectorConfig, len(step.Selectors))
+	selectors := make([]utils.SelectorConfig, len(step.Selectors))
 	for i, sel := range step.Selectors {
-		selectors[i] = SelectorConfig{
+		selectors[i] = utils.SelectorConfig{
 			Type:  sel.Type,
 			Value: sel.Value,
 			Scope: sel.Scope,
@@ -527,7 +523,7 @@ func (r *Runner) handleRadiosSelect(step TestStep) error {
 }
 
 // handleTableEdit 处理表格编辑操作
-func (r *Runner) handleTableEdit(step TestStep) error {
+func (r *Runner) handleTableEdit(step browseTemplate.TestStep) error {
 	if step.Table == nil {
 		return errors.New("table_edit action 需要提供 table 配置")
 	}
@@ -536,7 +532,7 @@ func (r *Runner) handleTableEdit(step TestStep) error {
 	}
 
 	// 如果未指定表格选择器，使用空配置（将自动查找页面中的第一个表格）
-	tableSelector := SelectorConfig{
+	tableSelector := utils.SelectorConfig{
 		Type:  step.Table.Selector.Type,
 		Value: step.Table.Selector.Value,
 	}
@@ -555,7 +551,7 @@ func (r *Runner) handleTableEdit(step TestStep) error {
 }
 
 // handleTableDelete 处理表格删除操作
-func (r *Runner) handleTableDelete(step TestStep) error {
+func (r *Runner) handleTableDelete(step browseTemplate.TestStep) error {
 	if step.Table == nil {
 		return errors.New("table_delete action 需要提供 table 配置")
 	}
@@ -564,7 +560,7 @@ func (r *Runner) handleTableDelete(step TestStep) error {
 	}
 
 	// 如果未指定表格选择器，使用空配置（将自动查找页面中的第一个表格）
-	tableSelector := SelectorConfig{
+	tableSelector := utils.SelectorConfig{
 		Type:  step.Table.Selector.Type,
 		Value: step.Table.Selector.Value,
 	}
@@ -583,7 +579,7 @@ func (r *Runner) handleTableDelete(step TestStep) error {
 }
 
 // handleTableAssert 处理表格断言操作
-func (r *Runner) handleTableAssert(step TestStep) error {
+func (r *Runner) handleTableAssert(step browseTemplate.TestStep) error {
 	if step.Table == nil {
 		return errors.New("table_assert action 需要提供 table 配置")
 	}
@@ -598,7 +594,7 @@ func (r *Runner) handleTableAssert(step TestStep) error {
 	}
 
 	// 如果未指定表格选择器，使用空配置（将自动查找页面中的第一个表格）
-	tableSelector := SelectorConfig{
+	tableSelector := utils.SelectorConfig{
 		Type:  step.Table.Selector.Type,
 		Value: step.Table.Selector.Value,
 	}
@@ -622,7 +618,7 @@ func (r *Runner) handleTableAssert(step TestStep) error {
 }
 
 // handleSearch 处理查询操作
-func (r *Runner) handleSearch(step TestStep) error {
+func (r *Runner) handleSearch(step browseTemplate.TestStep) error {
 	if step.Search == nil {
 		return errors.New("search action 需要提供 search 配置")
 	}
@@ -637,7 +633,7 @@ func (r *Runner) handleSearch(step TestStep) error {
 				return errors.New("search.inputs 中的每个输入需要提供 selector")
 			}
 
-			selector := SelectorConfig{
+			selector := utils.SelectorConfig{
 				Type:  input.Selector.Type,
 				Value: input.Selector.Value,
 			}
@@ -657,7 +653,7 @@ func (r *Runner) handleSearch(step TestStep) error {
 	}
 
 	// 点击查询按钮
-	buttonSelector := SelectorConfig{
+	buttonSelector := utils.SelectorConfig{
 		Type:  step.Search.Button.Type,
 		Value: step.Search.Button.Value,
 	}

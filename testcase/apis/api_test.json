@@ -1,5 +1,37 @@
 [
     {
+        "name": "用户登录失败测试",
+        "steps": [
+            {
+                "action": "goto",
+                "url": "https://192.168.0.116:16333/"
+            },
+            {
+                "action": "input",
+                "selector": {
+                    "type": "field",
+                    "value": "请输入用户名"
+                },
+                "text": "secadmin"
+            },
+            {
+                "action": "input",
+                "selector": {
+                    "type": "field",
+                    "value": "请输入密码"
+                },
+                "text": "11"
+            },
+            {
+                "action": "click",
+                "selector": {
+                    "type": "button",
+                    "value": "登录"
+                }
+            }
+        ]
+    },
+    {
         "name": "Test Login API",
         "api_config": {
             "template": "call_login",
@@ -18,7 +50,7 @@
                 },
                 {
                     "key": "{api_port}",
-                    "value": "8800"
+                    "value": "8080"
                 }
             ]
         },
