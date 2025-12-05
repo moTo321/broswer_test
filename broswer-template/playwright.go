@@ -1,10 +1,8 @@
-package driver
+package broswerTemplate
 
 import (
 	"log"
 	"time"
-
-	"autotest/config"
 
 	"github.com/playwright-community/playwright-go"
 )
@@ -18,9 +16,9 @@ func Start() playwright.Page {
 }
 
 // StartWithConfig 使用指定配置启动浏览器
-func StartWithConfig(cfg *config.Config) playwright.Page {
+func StartWithConfig(cfg *Config) playwright.Page {
 	if cfg == nil {
-		cfg = config.DefaultConfig()
+		cfg = DefaultConfig()
 	}
 
 	pw, err := playwright.Run()

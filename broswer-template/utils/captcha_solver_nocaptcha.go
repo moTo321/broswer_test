@@ -1,3 +1,4 @@
+//go:build nocaptcha
 // +build nocaptcha
 
 package utils
@@ -11,4 +12,3 @@ import (
 func SolveCaptcha(imagePath string) (string, error) {
 	return "", fmt.Errorf("验证码识别功能未启用: 请安装 Tesseract OCR 或使用正常编译方式")
 }
-

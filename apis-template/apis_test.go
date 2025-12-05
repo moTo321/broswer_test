@@ -1,4 +1,4 @@
-package apistemplate
+package apisTemplate
 
 import (
 	"encoding/json"
@@ -27,12 +27,6 @@ func TestLoadAPITemplates(t *testing.T) {
 	if callLogin.Method != "post" {
 		t.Errorf("期望 call_login 的 Method 为 post, 实际为 %s", callLogin.Method)
 	}
-}
-
-// 定义用于解析测试用例 JSON 的辅助结构体
-type TestCaseConfig struct {
-	Template string  `json:"template"`
-	Params   []Param `json:"params"`
 }
 
 func TestGenerateRequest_ParamReplacement(t *testing.T) {
@@ -149,19 +143,6 @@ func TestGenerateRequest_URLReplacement(t *testing.T) {
 	}
 }
 
-// ExpectConfig 定义期望结果
-type ExpectConfig struct {
-	Status int                    `json:"status"`
-	Body   map[string]interface{} `json:"body"`
-}
-
-// TestCase 对应 JSON Array 中的单个对象
-type TestCase struct {
-	Name      string         `json:"name"`
-	APIConfig TestCaseConfig `json:"api_config"`
-	Expect    ExpectConfig   `json:"expect"`
-}
-
 func TestRunTestCases_RealServer(t *testing.T) {
 	// 1. 加载 API 模板 (从 apis.json 文件)
 	// 确保 apis.json 在当前测试目录下，或者使用绝对路径
@@ -249,39 +230,5 @@ func TestRunTestCases_RealServer(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-// ==========================================
-// 辅助函数 (必须添加)
-// ==========================================
-
-// compareValues 处理 JSON 数值类型的比较
-func compareValues(expected, actual interface{}) bool {
-	if expected == actual {
-		return true
-	}
-	// 将所有数字统一转为 float64 进行比较
-	expFloat, ok1 := toFloat64(expected)
-	actFloat, ok2 := toFloat64(actual)
-	if ok1 && ok2 {
-		return expFloat == actFloat
-	}
-	// 如果不是数字，直接对比字符串形式 (兜底方案)
-	return fmt.Sprintf("%v", expected) == fmt.Sprintf("%v", actual)
-}
-
-func toFloat64(v interface{}) (float64, bool) {
-	switch val := v.(type) {
-	case int:
-		return float64(val), true
-	case int64:
-		return float64(val), true
-	case float64:
-		return val, true
-	case float32:
-		return float64(val), true
-	default:
-		return 0, false
 	}
 }

@@ -1,15 +1,13 @@
-package runner
+package broswerTemplate
 
 import (
+	"autotest/broswer-template/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
-
-	"autotest/driver"
-	"autotest/utils"
 
 	"github.com/playwright-community/playwright-go"
 )
@@ -152,7 +150,7 @@ func (r *Runner) RunTestCase(testCase TestCase) error {
 
 		if err != nil {
 			// 错误截图
-			driver.TakeErrorScreenshot(r.page)
+			TakeErrorScreenshot(r.page)
 			return fmt.Errorf("步骤 [%d] %s 执行失败: %v", i+1, step.Action, err)
 		}
 
@@ -211,7 +209,7 @@ func (r *Runner) handleInput(step TestStep) error {
 	}
 
 	// 定位元素
-	selector := utils.SelectorConfig{
+	selector := SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -242,7 +240,7 @@ func (r *Runner) handleClick(step TestStep) error {
 	}
 
 	// 定位元素
-	selector := utils.SelectorConfig{
+	selector := SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -276,7 +274,7 @@ func (r *Runner) handleAssert(step TestStep) error {
 	}
 
 	// 定位元素
-	selector := utils.SelectorConfig{
+	selector := SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -306,7 +304,7 @@ func (r *Runner) handleAssert(step TestStep) error {
 // verifyExpect 验证期望结果
 func (r *Runner) verifyExpect(expect *ExpectConfig, inputText string) error {
 	// 定位期望验证的元素
-	element, err := utils.LocateElement(r.page, utils.SelectorConfig{
+	element, err := utils.LocateElement(r.page, SelectorConfig{
 		Type:  expect.Type,
 		Value: expect.Value,
 	})
@@ -390,12 +388,12 @@ func (r *Runner) handleCaptchaInput(step TestStep) error {
 	}
 
 	// 转换选择器类型
-	imageSelector := utils.SelectorConfig{
+	imageSelector := SelectorConfig{
 		Type:  step.Captcha.ImageSelector.Type,
 		Value: step.Captcha.ImageSelector.Value,
 		Scope: step.Captcha.ImageSelector.Scope,
 	}
-	inputSelector := utils.SelectorConfig{
+	inputSelector := SelectorConfig{
 		Type:  step.Captcha.InputSelector.Type,
 		Value: step.Captcha.InputSelector.Value,
 		Scope: step.Captcha.InputSelector.Scope,
@@ -414,7 +412,7 @@ func (r *Runner) handleSelectOption(step TestStep) error {
 		return errors.New("select_option action 需要提供 text（选项文本或值）")
 	}
 
-	selector := utils.SelectorConfig{
+	selector := SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -429,7 +427,7 @@ func (r *Runner) handleCheckboxToggle(step TestStep) error {
 		return errors.New("checkbox_toggle action 需要提供 selector")
 	}
 
-	selector := utils.SelectorConfig{
+	selector := SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -447,7 +445,7 @@ func (r *Runner) handleCheckboxSet(step TestStep) error {
 		return errors.New("checkbox_set action 需要提供 checked 字段（true/false）")
 	}
 
-	selector := utils.SelectorConfig{
+	selector := SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -462,7 +460,7 @@ func (r *Runner) handleRadioSelect(step TestStep) error {
 		return errors.New("radio_select action 需要提供 selector")
 	}
 
-	selector := utils.SelectorConfig{
+	selector := SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -480,7 +478,7 @@ func (r *Runner) handleSelectOptions(step TestStep) error {
 		return errors.New("select_options action 需要提供 options（选项数组）")
 	}
 
-	selector := utils.SelectorConfig{
+	selector := SelectorConfig{
 		Type:  step.Selector.Type,
 		Value: step.Selector.Value,
 		Scope: step.Selector.Scope,
@@ -498,9 +496,9 @@ func (r *Runner) handleCheckboxesSet(step TestStep) error {
 		return errors.New("checkboxes_set action 需要提供 checked 字段（true/false）")
 	}
 
-	selectors := make([]utils.SelectorConfig, len(step.Selectors))
+	selectors := make([]SelectorConfig, len(step.Selectors))
 	for i, sel := range step.Selectors {
-		selectors[i] = utils.SelectorConfig{
+		selectors[i] = SelectorConfig{
 			Type:  sel.Type,
 			Value: sel.Value,
 			Scope: sel.Scope,
@@ -516,9 +514,9 @@ func (r *Runner) handleRadiosSelect(step TestStep) error {
 		return errors.New("radios_select action 需要提供 selectors（选择器数组）")
 	}
 
-	selectors := make([]utils.SelectorConfig, len(step.Selectors))
+	selectors := make([]SelectorConfig, len(step.Selectors))
 	for i, sel := range step.Selectors {
-		selectors[i] = utils.SelectorConfig{
+		selectors[i] = SelectorConfig{
 			Type:  sel.Type,
 			Value: sel.Value,
 			Scope: sel.Scope,
@@ -538,7 +536,7 @@ func (r *Runner) handleTableEdit(step TestStep) error {
 	}
 
 	// 如果未指定表格选择器，使用空配置（将自动查找页面中的第一个表格）
-	tableSelector := utils.SelectorConfig{
+	tableSelector := SelectorConfig{
 		Type:  step.Table.Selector.Type,
 		Value: step.Table.Selector.Value,
 	}
@@ -566,7 +564,7 @@ func (r *Runner) handleTableDelete(step TestStep) error {
 	}
 
 	// 如果未指定表格选择器，使用空配置（将自动查找页面中的第一个表格）
-	tableSelector := utils.SelectorConfig{
+	tableSelector := SelectorConfig{
 		Type:  step.Table.Selector.Type,
 		Value: step.Table.Selector.Value,
 	}
@@ -600,7 +598,7 @@ func (r *Runner) handleTableAssert(step TestStep) error {
 	}
 
 	// 如果未指定表格选择器，使用空配置（将自动查找页面中的第一个表格）
-	tableSelector := utils.SelectorConfig{
+	tableSelector := SelectorConfig{
 		Type:  step.Table.Selector.Type,
 		Value: step.Table.Selector.Value,
 	}
@@ -639,7 +637,7 @@ func (r *Runner) handleSearch(step TestStep) error {
 				return errors.New("search.inputs 中的每个输入需要提供 selector")
 			}
 
-			selector := utils.SelectorConfig{
+			selector := SelectorConfig{
 				Type:  input.Selector.Type,
 				Value: input.Selector.Value,
 			}
@@ -659,7 +657,7 @@ func (r *Runner) handleSearch(step TestStep) error {
 	}
 
 	// 点击查询按钮
-	buttonSelector := utils.SelectorConfig{
+	buttonSelector := SelectorConfig{
 		Type:  step.Search.Button.Type,
 		Value: step.Search.Button.Value,
 	}

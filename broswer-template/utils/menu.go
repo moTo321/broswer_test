@@ -133,4 +133,3 @@ func locateMenuElement(page playwright.Page, menuText string) (playwright.Elemen
 
 	return nil, fmt.Errorf("无法定位菜单项 '%s': %v", menuText, lastErr)
 }
-

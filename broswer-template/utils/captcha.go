@@ -133,4 +133,3 @@ func AutoSolveCaptcha(page playwright.Page) (string, error) {
 	// 识别并输入验证码
 	return SolveAndInputCaptcha(page, captchaSelector, inputSelector)
 }
-

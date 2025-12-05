@@ -1,4 +1,4 @@
-package apistemplate
+package apisTemplate
 
 import (
 	"bytes"

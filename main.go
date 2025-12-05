@@ -1,6 +1,7 @@
 package main
 
 import (
+	apistemplate "autotest/apis-template"
 	"autotest/config"
 	"autotest/driver"
 	"autotest/runner"
@@ -17,7 +18,9 @@ func main() {
 	var (
 		configFile = flag.String("c", "config.yaml", "配置文件路径 (默认: config.yaml)")
 		testFile   = flag.String("f", "testcase/login_example.json", "测试用例文件路径 (默认: testcase/login_example.json)")
-		help       = flag.Bool("h", false, "显示帮助信息")
+		// 新增：API 模板路径参数
+		apiFile = flag.String("a", "apis-template/apis.json", "API 模板文件路径")
+		help    = flag.Bool("h", false, "显示帮助信息")
 	)
 
 	// 解析命令行参数
@@ -41,6 +44,15 @@ func main() {
 		fmt.Printf("   - 浏览器: %s\n", cfg.Browser)
 		fmt.Printf("   - 无头模式: %t\n", cfg.Headless)
 		fmt.Printf("   - 超时时间: %dms\n", cfg.Timeout)
+	}
+
+	// 2. 加载 API Templates (新增步骤)
+	fmt.Printf("📋 加载 API 模板: %s\n", *apiFile)
+	apiTemplates, err := apistemplate.LoadAPITemplates(*apiFile)
+	if err != nil {
+		// 这里可以选择报错退出，或者只是打印警告（如果只有 UI 测试）
+		fmt.Printf("⚠️  API 模板加载失败 (如果是纯 UI 测试请忽略): %v\n", err)
+		apiTemplates = make(apistemplate.APITemplates) // 空 map 防止空指针
 	}
 
 	// 启动 Playwright 浏览器

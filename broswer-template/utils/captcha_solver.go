@@ -1,3 +1,4 @@
+//go:build !nocaptcha
 // +build !nocaptcha
 
 package utils

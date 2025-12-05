@@ -79,18 +79,18 @@ func SelectOptions(page playwright.Page, selectSelector SelectorConfig, optionVa
 				if boolResult, ok := isMultipleResult.(bool); ok {
 					isMultiple = boolResult
 				}
-				
+
 				// 对于多选，需要先点击展开（如果还没展开）
 				optionsToSelect := optionValues
 				if !isMultiple && len(optionValues) > 1 {
 					// 如果不是multiple，只能选第一个
 					optionsToSelect = []string{optionValues[0]}
 				}
-				
+
 				err2 = selectElement.Click()
 				if err2 == nil {
 					time.Sleep(300 * time.Millisecond)
-					
+
 					// 逐个选择选项
 					for _, optionValue := range optionsToSelect {
 						optionSelectors := []string{
@@ -124,12 +124,12 @@ func SelectOptions(page playwright.Page, selectSelector SelectorConfig, optionVa
 								}
 							}
 						}
-						
+
 						if !optionFound {
 							return fmt.Errorf("未找到选项: %s", optionValue)
 						}
 					}
-					
+
 					time.Sleep(200 * time.Millisecond)
 					return nil
 				}
@@ -399,4 +399,3 @@ func GetSelectOptions(page playwright.Page, selectSelector SelectorConfig) ([]st
 
 	return nil, fmt.Errorf("选项列表格式错误")
 }
-
