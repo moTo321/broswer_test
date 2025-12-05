@@ -1,0 +1,43 @@
+{
+    "call_login": {
+        "url": "http://{api_host}:{api_port}/api/login",
+        "method": "post",
+        "data": {
+            "username": "{username}",
+            "password": "{password}"
+        },
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "save_response": {
+            "token": "response.token"
+        }
+    },
+    "add_access_control": {
+        "url": "http://{api_host}:{api_port}/api/access_control/add",
+        "method": "post",
+        "data": {
+            "name": "{name}",
+            "type": "{type}",
+            "rules": "{rules}"
+        },
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {token}"
+        },
+        "save_response": {
+            "access_control_id": "response.data.id"
+        }
+    },
+    "del_access_control": {
+        "url": "http://{api_host}:{api_port}/api/access_control/delete",
+        "method": "post",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {token}"
+        },
+        "data": {
+            "id": "{access_control_id}"
+        }
+    }
+}

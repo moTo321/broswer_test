@@ -1,0 +1,12 @@
+{
+    "ping": {
+        "command": "ping -c 4 {target_ip}",
+        "expected_output": "4 packets transmitted, 4 received",
+        "excepted": {}
+    },
+    "traceroute": {
+        "command": "traceroute {target_ip}",
+        "expected_output": "traceroute to {target_ip}",
+        "excepted": {}
+    }
+}
