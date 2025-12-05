@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
+	"autotest/driver"
 	"autotest/utils"
 
 	"github.com/playwright-community/playwright-go"
@@ -26,28 +27,28 @@ type ExpectConfig struct {
 
 // TestStep 测试步骤
 type TestStep struct {
-	Action   string            `json:"action"`             // "goto", "input", "click", "assert", "menu_click", "captcha_input", "select_option", "select_options", "checkbox_toggle", "checkbox_set", "checkboxes_set", "radio_select", "radios_select", "table_edit", "table_delete", "table_assert", "search"
-	URL      string            `json:"url,omitempty"`      // goto的URL
-	Selector *SelectorConfig   `json:"selector,omitempty"` // 元素选择器（单个）
+	Action    string           `json:"action"`              // "goto", "input", "click", "assert", "menu_click", "captcha_input", "select_option", "select_options", "checkbox_toggle", "checkbox_set", "checkboxes_set", "radio_select", "radios_select", "table_edit", "table_delete", "table_assert", "search"
+	URL       string           `json:"url,omitempty"`       // goto的URL
+	Selector  *SelectorConfig  `json:"selector,omitempty"`  // 元素选择器（单个）
 	Selectors []SelectorConfig `json:"selectors,omitempty"` // 元素选择器（多个，用于批量操作）
-	Text     string            `json:"text,omitempty"`     // input的文本内容，或select的选项值（单个）
-	Options  []string          `json:"options,omitempty"`  // select的选项值（多个，用于多选）
-	Expect   *ExpectConfig     `json:"expect,omitempty"`   // 期望验证配置
-	MenuPath string            `json:"menu_path,omitempty"` // 菜单路径，格式: "系统管理 > 用户管理 > 新增用户"
-	Captcha  *CaptchaConfig    `json:"captcha,omitempty"`  // 验证码配置
-	Checked  *bool             `json:"checked,omitempty"`  // checkbox_set时使用，true表示选中，false表示取消选中
-	Table    *TableConfig      `json:"table,omitempty"`   // 表格配置
-	Search   *SearchConfig     `json:"search,omitempty"`  // 查询配置
+	Text      string           `json:"text,omitempty"`      // input的文本内容，或select的选项值（单个）
+	Options   []string         `json:"options,omitempty"`   // select的选项值（多个，用于多选）
+	Expect    *ExpectConfig    `json:"expect,omitempty"`    // 期望验证配置
+	MenuPath  string           `json:"menu_path,omitempty"` // 菜单路径，格式: "系统管理 > 用户管理 > 新增用户"
+	Captcha   *CaptchaConfig   `json:"captcha,omitempty"`   // 验证码配置
+	Checked   *bool            `json:"checked,omitempty"`   // checkbox_set时使用，true表示选中，false表示取消选中
+	Table     *TableConfig     `json:"table,omitempty"`     // 表格配置
+	Search    *SearchConfig    `json:"search,omitempty"`    // 查询配置
 }
 
 // TableConfig 表格配置
 type TableConfig struct {
-	Selector SelectorConfig      `json:"selector"` // 表格选择器
-	Row      *TableRowConfig    `json:"row,omitempty"` // 行定位配置
+	Selector SelectorConfig     `json:"selector"`         // 表格选择器
+	Row      *TableRowConfig    `json:"row,omitempty"`    // 行定位配置
 	Column   *TableColumnConfig `json:"column,omitempty"` // 列定位配置
 	Action   string             `json:"action,omitempty"` // 操作类型: "edit", "delete"
-	Value    string             `json:"value,omitempty"` // 断言期望值
-	Mode     string             `json:"mode,omitempty"` // 断言模式: "equals", "contains", "not_equals", "not_contains"
+	Value    string             `json:"value,omitempty"`  // 断言期望值
+	Mode     string             `json:"mode,omitempty"`   // 断言模式: "equals", "contains", "not_equals", "not_contains"
 }
 
 // TableRowConfig 表格行配置
@@ -64,8 +65,8 @@ type TableColumnConfig struct {
 
 // SearchConfig 查询配置
 type SearchConfig struct {
-	Inputs []SearchInput    `json:"inputs,omitempty"` // 查询输入框配置
-	Button *SelectorConfig  `json:"button,omitempty"` // 查询按钮选择器
+	Inputs []SearchInput   `json:"inputs,omitempty"` // 查询输入框配置
+	Button *SelectorConfig `json:"button,omitempty"` // 查询按钮选择器
 }
 
 // SearchInput 查询输入配置
@@ -104,8 +105,10 @@ func NewRunner(page playwright.Page) *Runner {
 func (r *Runner) RunTestCase(testCase TestCase) error {
 	fmt.Printf("📋 开始执行用例: %s\n", testCase.Name)
 
-	for i, step := range testCase.Steps {
-		fmt.Printf("  [%d/%d] 执行步骤: %s\n", i+1, len(testCase.Steps), step.Action)
+	allStepsCount := len(testCase.Steps)
+	for i := 0; i < allStepsCount; i++ {
+		step := testCase.Steps[i]
+		fmt.Printf("  [%d/%d] 执行步骤: %s\n", i+1, allStepsCount, step.Action)
 
 		var err error
 		switch step.Action {
@@ -149,11 +152,7 @@ func (r *Runner) RunTestCase(testCase TestCase) error {
 
 		if err != nil {
 			// 错误截图
-			timestamp := time.Now().Unix()
-			screenshotPath := fmt.Sprintf("assets/errors/error_%d.png", timestamp)
-			r.page.Screenshot(playwright.PageScreenshotOptions{
-				Path: playwright.String(screenshotPath),
-			})
+			driver.TakeErrorScreenshot(r.page)
 			return fmt.Errorf("步骤 [%d] %s 执行失败: %v", i+1, step.Action, err)
 		}
 
@@ -177,7 +176,7 @@ func (r *Runner) RunTestSuite(suite TestSuite) error {
 
 // RunTestSuiteFromFile 从文件加载并执行测试套件
 func (r *Runner) RunTestSuiteFromFile(filePath string) error {
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("读取测试文件失败: %v", err)
 	}

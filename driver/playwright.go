@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -36,7 +35,10 @@ func StartWithConfig(cfg *config.Config) playwright.Page {
 		browserType = pw.Firefox
 	case "webkit":
 		browserType = pw.WebKit
+	case "chromium":
+		browserType = pw.Chromium
 	default:
+		// 未知浏览器类型，使用默认值 Chromium
 		browserType = pw.Chromium
 	}
 
@@ -78,7 +80,8 @@ func StartWithConfig(cfg *config.Config) playwright.Page {
 }
 
 func TakeErrorScreenshot(page playwright.Page) {
-	file := fmt.Sprintf("assets/errors/error_%d.png", time.Now().Unix())
+	timeStr := time.Now().Format("2006-01-02_15-04-05.000")
+	file := "assets/errors/error_" + timeStr + ".png"
 	page.Screenshot(playwright.PageScreenshotOptions{
 		Path: playwright.String(file),
 	})

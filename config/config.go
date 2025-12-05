@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -20,12 +19,13 @@ type Config struct {
 
 // LoadConfig 从文件加载配置
 func LoadConfig(configPath string) (*Config, error) {
+	defaultConfig := DefaultConfig()
 	// 如果文件不存在，使用默认配置
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return DefaultConfig(), nil
+		return defaultConfig, nil
 	}
 
-	data, err := ioutil.ReadFile(configPath)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("读取配置文件失败: %v", err)
 	}
@@ -38,13 +38,13 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	// 如果某些字段未设置，使用默认值
 	if config.Browser == "" {
-		config.Browser = "chromium"
+		config.Browser = defaultConfig.Browser
 	}
 	if config.Timeout == 0 {
-		config.Timeout = 5000
+		config.Timeout = defaultConfig.Timeout
 	}
 	if config.RetryCaptcha == 0 {
-		config.RetryCaptcha = 3
+		config.RetryCaptcha = defaultConfig.RetryCaptcha
 	}
 	// 默认不忽略 HTTPS 错误，除非配置中显式开启
 	// 这里不强制设置，保持配置文件的布尔值即可
@@ -63,4 +63,3 @@ func DefaultConfig() *Config {
 		KeepBrowserOpen:   false,
 	}
 }
-

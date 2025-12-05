@@ -39,7 +39,7 @@ func main() {
 		cfg = config.DefaultConfig()
 	} else {
 		fmt.Printf("   - 浏览器: %s\n", cfg.Browser)
-		fmt.Printf("   - 无头模式: %v\n", cfg.Headless)
+		fmt.Printf("   - 无头模式: %t\n", cfg.Headless)
 		fmt.Printf("   - 超时时间: %dms\n", cfg.Timeout)
 	}
 
@@ -76,11 +76,11 @@ func main() {
 // waitForUserInput 等待用户输入或信号，保持程序运行
 func waitForUserInput(message string) {
 	fmt.Println("⚠️  " + message)
-	
+
 	// 设置信号处理，捕获 Ctrl+C
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	
+
 	// 启动 goroutine 等待用户输入
 	inputChan := make(chan bool, 1)
 	go func() {
@@ -88,11 +88,11 @@ func waitForUserInput(message string) {
 		reader.ReadString('\n')
 		inputChan <- true
 	}()
-	
+
 	// 等待用户输入或信号
 	select {
 	case <-inputChan:
-		fmt.Println("程序退出")
+		fmt.Println("\n收到用户输入，程序退出")
 	case <-sigChan:
 		fmt.Println("\n收到退出信号，程序退出")
 	}

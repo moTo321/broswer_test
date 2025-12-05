@@ -45,20 +45,38 @@ func locateField(page playwright.Page, text string, scope string) (playwright.El
 	case "dialog":
 		dialogSelectors := []string{
 			"[role='dialog']",
-			".el-dialog__wrapper",
-			".el-dialog",
-			".ant-modal-root",
-			".ant-modal",
+			".el-dialog__wrapper", // Element UI 外层
+			".el-dialog",          // Element UI 内容层
+			".ant-modal-root",     // Ant Design
+			".ant-modal-content",
 			".modal",
 			".dialog",
 		}
+
+		foundVisibleRoot := false
 		for _, ds := range dialogSelectors {
 			loc := page.Locator(ds)
 			count, err := loc.Count()
 			if err == nil && count > 0 {
-				root = loc
+				// 遍历所有找到的 dialog 节点，只选可见的那个
+				for i := range count {
+					candidate := loc.Nth(i)
+					// 检查该容器本身是否可见，或者其内部是否包含可见内容
+					if visible, _ := candidate.IsVisible(); visible {
+						root = candidate
+						foundVisibleRoot = true
+						break
+					}
+				}
+			}
+			if foundVisibleRoot {
 				break
 			}
+		}
+		// 如果指定了 scope 是 dialog 但没找到可见的 dialog，考虑回退到 body
+		if !foundVisibleRoot {
+			fmt.Println("[locateField] 警告: 未找到可见的 Dialog 容器，将尝试在全页面搜索...")
+			root = page.Locator("body")
 		}
 	case "main":
 		mainSelectors := []string{
@@ -142,20 +160,38 @@ func locateButton(page playwright.Page, text string, scope string) (playwright.E
 	case "dialog":
 		dialogSelectors := []string{
 			"[role='dialog']",
-			".el-dialog__wrapper",
-			".el-dialog",
-			".ant-modal-root",
-			".ant-modal",
+			".el-dialog__wrapper", // Element UI 外层
+			".el-dialog",          // Element UI 内容层
+			".ant-modal-root",     // Ant Design
+			".ant-modal-content",
 			".modal",
 			".dialog",
 		}
+
+		foundVisibleRoot := false
 		for _, ds := range dialogSelectors {
 			loc := page.Locator(ds)
 			count, err := loc.Count()
 			if err == nil && count > 0 {
-				root = loc
+				// 遍历所有找到的 dialog 节点，只选可见的那个
+				for i := range count {
+					candidate := loc.Nth(i)
+					// 检查该容器本身是否可见，或者其内部是否包含可见内容
+					if visible, _ := candidate.IsVisible(); visible {
+						root = candidate
+						foundVisibleRoot = true
+						break
+					}
+				}
+			}
+			if foundVisibleRoot {
 				break
 			}
+		}
+		// 如果指定了 scope 是 dialog 但没找到可见的 dialog，考虑回退到 body
+		if !foundVisibleRoot {
+			fmt.Println("[locateButton] 警告: 未找到可见的 Dialog 容器，将尝试在全页面搜索...")
+			root = page.Locator("body")
 		}
 	case "main":
 		mainSelectors := []string{
